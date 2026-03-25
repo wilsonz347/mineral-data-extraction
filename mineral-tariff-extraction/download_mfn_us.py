@@ -6,7 +6,7 @@ from playwright.sync_api import sync_playwright
 BASE_URL = "https://critmin.org/tariff-data/"
 REPORTER = "USA"
 TARIFF_TYPE = "mfn"
-YEARS = range(2010, 2024)
+YEARS = range(1996, 2024)
 OUTPUT_DIR = "data/mfn/USA"
 
 # Create directory if not exists
@@ -35,6 +35,11 @@ def download_data():
 
                 # Wait for page to load
                 page.wait_for_timeout(3000)
+
+                rows = page.locator("table tbody tr")
+                if rows.count() == 0:
+                    print(f"No rows for {year}, skipping.")
+                    continue
 
                 # Trigger download
                 with page.expect_download(timeout=20000) as download_info:
