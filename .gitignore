@@ -1,3 +1,4 @@
 venv
 mineral-tariff-extraction/data/mfn/USA
 mineral-policy-extraction/data/policies/USA
+mineral-trade-extraction/data/trade/USA_WORLD

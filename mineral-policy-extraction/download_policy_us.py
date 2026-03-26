@@ -7,7 +7,7 @@ from playwright.sync_api import sync_playwright
 BASE_URL = "https://critmin.org"
 POLICY_URL = "https://critmin.org/policies/"
 ECONOMY = "USA"
-YEARS = range(2009, 2024)
+YEARS = range(1970, 2024)
 OUTPUT_DIR = "data/policies/USA"
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
