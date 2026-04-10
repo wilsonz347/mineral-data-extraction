@@ -1,6 +1,6 @@
 # Critical Mineral Policy Scraper
 
-A web scraper that extracts critical minerals policy data from [CritMin.org](https://critmin.org/policies/) by country and year, storing results in Google Cloud Storage.
+A web scraper that extracts critical minerals policy data from [CritMin.org](https://critmin.org/policies/) by economy and year, storing results in Google Cloud Storage.
 
 ## Overview
 
