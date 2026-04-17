@@ -4,6 +4,10 @@ from datetime import datetime, timezone
 from bs4 import BeautifulSoup
 from config import BASE_URL, POLICY_URL, OUTPUT_DIR
 from src.utils.helpers import clean, safe_get
+import hashlib
+
+def make_row_key(country, year, url):
+    return hashlib.sha256(f"{country}|{year}|{url}".encode("utf-8")).hexdigest()
 
 def parse_listing_page(html):
     soup = BeautifulSoup(html, "html.parser")
@@ -85,6 +89,7 @@ def scrape_country_year(country, year):
 
         policy_data = parse_policy_page(page_html)
         data.append({
+            "row_key": make_row_key(country, year, link),
             "year": year,
             "country": country,
             "url": link,
