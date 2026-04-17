@@ -1,14 +1,32 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
 import pandas as pd
+
 from config import countries, YEARS, MAX_WORKERS
 from src.scraping.policy_scraper import scrape_country_year
 from src.utils.bigquery_setup import upload_to_bigquery
+from src.utils.helpers import load_checkpoint, save_checkpoint
+
+RAW_TABLE_ID = "ita-development-project.mineral_data_policy.policy_results_raw"
+BATCH_SIZE = 20
+
 
 def main():
-    tasks = [(country, year) for country in countries for year in YEARS]
-    print(f"Total tasks: {len(tasks)}")
+    done = load_checkpoint()
+    tasks = [
+        (country, year)
+        for country in countries
+        for year in YEARS
+        if (country, year) not in done
+    ]
+    print(f"Total tasks remaining: {len(tasks)}")
 
-    all_rows = []
+    if not tasks:
+        print("Nothing left to do.")
+        return
+
+    batch_rows = []
+    batch_done = set()
 
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         future_map = {
@@ -20,57 +38,31 @@ def main():
             country, year = future_map[future]
             try:
                 rows = future.result()
-                all_rows.extend(rows)
+                if rows:
+                    batch_rows.extend(rows)
+                batch_done.add((country, year))
+
+                if len(batch_rows) >= BATCH_SIZE:
+                    df = pd.DataFrame(batch_rows)
+                    print(f"Uploading batch of {len(df)} rows")
+                    upload_to_bigquery(df, RAW_TABLE_ID, write_disposition="WRITE_APPEND")
+                    done.update(batch_done)
+                    save_checkpoint(done)
+                    batch_rows = []
+                    batch_done = set()
+
             except Exception as e:
                 print(f"[error] {country} {year}: {e}")
 
-    if not all_rows:
-        print("No rows collected.")
-        return
+    if batch_rows:
+        df = pd.DataFrame(batch_rows)
+        print(f"Uploading final batch of {len(df)} rows")
+        upload_to_bigquery(df, RAW_TABLE_ID, write_disposition="WRITE_APPEND")
+        done.update(batch_done)
+        save_checkpoint(done)
 
-    df = pd.DataFrame(all_rows)
-    print(f"Total rows collected: {len(df)}")
+    print("Done.")
 
-'''BATCH_SIZE = MAX_WORKERS * 2
-
-def main():
-    tasks = [(country, year) for country in countries for year in YEARS]
-    print(f"Total tasks: {len(tasks)}")
-
-    all_rows = []
-
-    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        for i in range(0, len(tasks), BATCH_SIZE):
-            batch = tasks[i:i + BATCH_SIZE]
-            future_map = {
-                executor.submit(scrape_country_year, country, year): (country, year)
-                for country, year in batch
-            }
-
-            found = False
-            for future in as_completed(future_map):
-                country, year = future_map[future]
-                try:
-                    rows = future.result()
-                    if rows:
-                        all_rows.extend(rows)
-                        print(f"Found data for {country} {year}, stopping early.")
-                        found = True
-                        break
-                    else:
-                        print(f"[empty] {country} {year}")
-                except Exception as e:
-                    print(f"[error] {country} {year}: {e}")
-
-            if found:
-                break
-
-    if not all_rows:
-        print("No rows collected.")
-        return
-
-    df = pd.DataFrame(all_rows)
-    print(f"Total rows collected: {len(df)}")'''
 
 if __name__ == "__main__":
     main()
