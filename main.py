@@ -3,11 +3,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import pandas as pd
 
 from config import countries, YEARS, MAX_WORKERS
-from src.scraping.policy_scraper import scrape_country_year
+from scraping.policy import scrape_country_year
 from src.utils.bigquery_setup import upload_to_bigquery
 from src.utils.helpers import load_checkpoint, save_checkpoint
 
-RAW_TABLE_ID = "ita-development-project.mineral_data_policy.policy_results_raw"
+RAW_TABLE_ID = "ita-development-project.mineral_data.critmin_policy_raw"
 BATCH_SIZE = 20
 
 
